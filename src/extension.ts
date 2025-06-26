@@ -1,15 +1,99 @@
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'
+import { cache } from './cache'
+import defaultDictionary from './dictionary.json'
+
+const WHITESPACE_CHARS = [' ', '\t', '\n', '\r']
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Congratulations, your extension "abolish" is now active!');
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('abolish')) {
+        cache.clear()
+      }
+    }),
+  )
 
-    const disposable = vscode.commands.registerCommand('abolish.helloWorld', () => {
-        vscode.window.showInformationMessage('Hello World from abolish!');
-    });
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.contentChanges.length === 0) {
+        return
+      }
 
-    context.subscriptions.push(disposable);
+      const activeEditor = vscode.window.activeTextEditor
+      if (!activeEditor || activeEditor.document !== event.document) {
+        return
+      }
+
+      for (const change of event.contentChanges) {
+        if (
+          change.text.length === 1 &&
+          WHITESPACE_CHARS.includes(change.text)
+        ) {
+          handleAutoCorrect(activeEditor, change)
+        }
+      }
+    }),
+  )
+}
+
+function handleAutoCorrect(
+  editor: vscode.TextEditor,
+  change: vscode.TextDocumentContentChangeEvent,
+) {
+  const document = editor.document
+  const position = change.range.start
+  if (position.character === 0) {
+    return
+  }
+
+  const range = document.getWordRangeAtPosition(position.translate(0, -1))
+  if (!range) {
+    return
+  }
+
+  const word = document.getText(range)
+  const correction = getCorrectionForWord(word, document.uri)
+
+  if (correction && correction !== word) {
+    editor.edit((editBuilder) => {
+      editBuilder.replace(range, correction)
+    })
+  }
+}
+
+function getCorrectionForWord(
+  word: string,
+  uri: vscode.Uri,
+): string | undefined {
+  const folder = vscode.workspace.getWorkspaceFolder(uri)
+  const dictionary = getDictionary(folder?.uri)
+
+  return dictionary[word]
+}
+
+const getDictionary = (uri: vscode.Uri | undefined): Record<string, string> => {
+  return cache(uri?.toString() ?? 'global', () => {
+    const config = vscode.workspace.getConfiguration('abolish', uri)
+
+    const defaultDictionaryEnabled = config.get<boolean>(
+      'abolish.defaultDictionaryEnabled',
+    )
+    const dictionary = config.get<Record<string, string>>('abolish.dictionary')
+
+    const result: Record<string, string> = {}
+
+    if (defaultDictionaryEnabled) {
+      Object.assign(result, defaultDictionary)
+    }
+
+    if (dictionary) {
+      Object.assign(result, dictionary)
+    }
+
+    return result
+  })
 }
 
 export function deactivate() {
-    console.log('Your extension "abolish" is now deactivated!');
+  cache.clear()
 }
