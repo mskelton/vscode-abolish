@@ -56,9 +56,19 @@ function handleAutoCorrect(
   const correction = getCorrectionForWord(word, document.uri)
 
   if (correction && correction !== word) {
-    editor.edit((editBuilder) => {
-      editBuilder.replace(range, correction)
-    })
+    editor
+      .edit((editBuilder) => {
+        editBuilder.replace(range, correction)
+      })
+      .then(() => {
+        // Fix cursor position after replacement
+        const newPosition = new vscode.Position(
+          change.range.start.line,
+          change.range.start.character - word.length + correction.length + 1,
+        )
+
+        editor.selection = new vscode.Selection(newPosition, newPosition)
+      })
   }
 }
 
