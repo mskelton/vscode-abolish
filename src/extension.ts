@@ -77,9 +77,9 @@ const getDictionary = (uri: vscode.Uri | undefined): Record<string, string> => {
     const config = vscode.workspace.getConfiguration('abolish', uri)
 
     const defaultDictionaryEnabled = config.get<boolean>(
-      'abolish.defaultDictionaryEnabled',
+      'defaultDictionaryEnabled',
     )
-    const dictionary = config.get<Record<string, string>>('abolish.dictionary')
+    const dictionary = config.get<Record<string, string>>('dictionary')
 
     const result: Record<string, string> = {}
 
