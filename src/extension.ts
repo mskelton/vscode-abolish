@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { cache } from './cache'
 import defaultDictionary from './dictionary.json'
+import { expandDictionary } from './expander'
 
 const WHITESPACE_CHARS = [' ', '\t', '\n', '\r']
 
@@ -83,11 +84,11 @@ const getDictionary = (uri: vscode.Uri | undefined): Record<string, string> => {
     const result: Record<string, string> = {}
 
     if (defaultDictionaryEnabled) {
-      Object.assign(result, defaultDictionary)
+      Object.assign(result, expandDictionary(defaultDictionary))
     }
 
     if (dictionary) {
-      Object.assign(result, dictionary)
+      Object.assign(result, expandDictionary(dictionary))
     }
 
     return result
