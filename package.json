@@ -41,6 +41,12 @@
     }
   },
   "main": "./out/extension.js",
+  "icon": "resources/icon.png",
+  "files": [
+    "out/**/*",
+    "resources/**/*",
+    "LICENSE"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
